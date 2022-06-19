@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <string.h>
 
 // Спасибо автору блога https://blog2k.ru/archives/3391 за описание структуры
 struct LocalFileHeader
