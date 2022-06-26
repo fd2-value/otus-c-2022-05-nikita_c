@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
 	uint8_t buffer[4];	/* буфер для хранения сигнатуры начала Local File Header */
 	size_t bytes = 0;	/* количество считанных байт из файла */
 	char *filename;
+	long int fileposition = 0; /* позиция в файле */
 	
 	struct LocalFileHeader lfh; /* переменная lfh типа LocalFileHeader */
 	
@@ -46,13 +47,13 @@ int main(int argc, char *argv[]) {
 	/* открыть файл argv[1] в режиме чтения бинарного файла
 		показать ошибку, если произошли проблемы при открытии */
 	if ((file = fopen(argv[1], "rb")) == NULL) { 
-        printf("ERROR! Can't open file!\n");
+        perror("ERROR");
         exit(1);
     }
     
     /* читаем 4 элемента по 1 байт в буфер */
     while ((bytes = fread(buffer, sizeof(uint8_t), 4, file)) > 0) {
-		/* Проверяем, не являются ли считанные нами байты сигнатурой начала Local File Header */
+		/* Проверяем, не являются ли считанные нами байты сигнатурой начала Local File Header  */
 		if (buffer[0] == 0x50 && 
 			buffer[1] == 0x4b && 
 			buffer[2] == 0x03 && 
@@ -64,30 +65,59 @@ int main(int argc, char *argv[]) {
 				
 				/* Если имя файла != 0 */
 				if (lfh.filenameLength) {
+					
 					/* Выделим память размером с длину имени файла */
 					filename = (char *)malloc(lfh.filenameLength);
 					if (filename == NULL) { 
 						printf("ERROR! Failed to allocate memory\n");
+						exit(1);
 					}
 					/* Читаем имя файла */
 					if (fread((char *)filename, lfh.filenameLength, 1, file) == 0) {
 						printf("ERROR! Failed to initialize pointer\n");
+						exit(1);
 					}
 					/* Выводим его в STDOUT */
 					fputs(filename, stdout);
 					putchar('\n');
+					
+					free(filename);
+				}
+		}
+		/* Проверяем, не являются ли считанные байты сигнатурой начала JPEG файла */
+		if (buffer[0] == 0xff && 
+		    buffer[1] == 0xd8 && 
+		    buffer[2] == 0xff) {
+				/* Если первые 3 байта говорят о том, что перед нами может быть JPEG файл, то
+				   немедленно считать с конца последние 2 байта файла */  
+				fflush(file);
+				fileposition = ftell(file);
+				fseek(file, -2, SEEK_END);
+				if (fread(buffer, sizeof(uint8_t), 2, file) == 0) {
+					printf("ERROR! Failed to read data from file\n");
+					exit(1);
+				}
+				/* Сигнатура окончания JPEG файла */
+				if (buffer[0] == 0xff && 
+					buffer[1] == 0xd9) {
+					/* перед нами JPEG файл */
+					printf("This is JPEG file!\n");
+					exit(0);
+				}
+				else {
+					/* перед нами не JPEG файл, возвращаем индикатор позиции на прежнее место */
+					fseek(file, fileposition, SEEK_SET);
 				}
 		}
 	}
 	
-	/* Если за предыдущий цикл не инициалировался указатель с именем файла,то 
-		можно сделать вывод, что это файл отличный от ZIPJPEG */
-	if(!strlen(filename)) {
-		printf("NOT a ZIPJPEG file!\n");
-		exit(0);
+	/* Если у нас чистый JPEG файл, то выполнение программы НЕ дойдет до этого участка программы.
+	   Если у нас JPEGZIP, то сигнатура начала у нас хотя бы для 1 файла будет проинициализирована.
+	   Если ничего из предидущих двух пунктов НЕ произошло, то перед нами другой файл. */
+	if (!lfh.versionToExtract) {
+			printf("This is not JPEGZIP or JPEG file\n");
 	}
 	
-	free(filename);
 	fclose(file);
 	
 	return 0;
