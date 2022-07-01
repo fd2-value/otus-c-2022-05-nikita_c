@@ -29,14 +29,16 @@ struct LocalFileHeader
 } __attribute__((packed));
 
 int main(int argc, char *argv[]) {
-	FILE *file;			/* указатель на файл, с которым будем работать */ 
-	uint8_t buffer[4];	/* буфер для хранения сигнатуры начала Local File Header */
-	size_t bytes = 0;	/* количество считанных байт из файла */
-	char *filename;
-	long int fileposition = 0; /* позиция в файле */
+	FILE *file;					/* указатель на файл, с которым будем работать */ 
+	uint8_t buffer[2];			/* буфер для хранения сигнатуры начала Local File Header */
+	uint8_t current;			/* текущий считанный байт */
+	size_t bytes = 0;			/* количество считанных байт из файла */
+	char *filename;				/* имя файла */
+	long int fileposition = 0; 	/* позиция в файле */ 
+	int index = 0;				/* индекс для отслеживания позиции сигнатуры */
 	
 	struct LocalFileHeader lfh; /* переменная lfh типа LocalFileHeader */
-	
+
 	/* если в качестве аргумента не передали имя файла, то показать сообщение об ошибке и выйти */
 	if (argc == 1) {
 		printf("ERROR! Not enough arguments! See below\n");
@@ -51,15 +53,26 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     
-    /* читаем 4 элемента по 1 байт в буфер */
-    while ((bytes = fread(buffer, sizeof(uint8_t), 4, file)) > 0) {
-		/* Проверяем, не являются ли считанные нами байты сигнатурой начала Local File Header  */
-		if (buffer[0] == 0x50 && 
-			buffer[1] == 0x4b && 
-			buffer[2] == 0x03 && 
-			buffer[3] == 0x04) {
-				/* Читаем структуру целиком */
-				if (fread((char *) &lfh, sizeof(lfh), 1, file) == 0) {
+    /* читаем 1 элемент по 1 байт в буфер */
+    while ((bytes = fread(&current, sizeof(uint8_t), 1, file)) > 0) {	
+		/* Получилось немного "велосипедно". Читаем по 1 байту и отслеживаем подряд идущие 4 байта начала ZIP LocalFileHeader.
+			Считали 0x50 увеличили index на 1. Cчитали 0x4b и index==1 (т.е. знаем, что предыдущий байт правильный - 0x50)
+			увеличили index на 1 и т.д. Когда мы считаем подряд идущие 4 байта 504b0304 и index=4, мы точно знаем что это начало LocalFileHeader.
+			Отслеживание начала JPEG файла работает также, только ищем подряд идущие 3 байта начала JPEG файла.
+			*/
+		if ((current == 0x50) && (index == 0 )){ index++; }
+		else if ((current == 0x4b) && (index == 1)) { index++; }
+		else if ((current == 0x03) && (index == 2)) { index++; }
+		else if ((current == 0x04) && (index == 3)) { index++; }
+		else if ((current == 0xff) && (index == 0)) { index++; }
+		else if ((current == 0xd8) && (index == 1)) { index++; }
+		else if ((current == 0xff) && (index == 2)) { index++; }
+		/* Если ничего из предыдущих условий не нашлось или последовательность подряд 
+			идущих сигнатур нарушена, то сбросить index */
+		else { index = 0;}
+		if (index == 4) {
+			/* Нашли сигнатуру LocalFileHeader, читаем структуру целиком */
+			if (fread((char *) &lfh, sizeof(lfh), 1, file) == 0) {
 					printf("ERROR! Failed to initializate LocalFileHeader struct\n");
 				}
 				
@@ -77,17 +90,19 @@ int main(int argc, char *argv[]) {
 						printf("ERROR! Failed to initialize pointer\n");
 						exit(1);
 					}
+					
+					filename[lfh.filenameLength] = 0;
+					
 					/* Выводим его в STDOUT */
 					fputs(filename, stdout);
 					putchar('\n');
 					
 					free(filename);
 				}
+				index = 0;
 		}
 		/* Проверяем, не являются ли считанные байты сигнатурой начала JPEG файла */
-		if (buffer[0] == 0xff && 
-		    buffer[1] == 0xd8 && 
-		    buffer[2] == 0xff) {
+		if (index == 3) {
 				/* Если первые 3 байта говорят о том, что перед нами может быть JPEG файл, то
 				   немедленно считать с конца последние 2 байта файла */  
 				fflush(file);
@@ -109,7 +124,8 @@ int main(int argc, char *argv[]) {
 					fseek(file, fileposition, SEEK_SET);
 				}
 		}
-	}
+}
+
 	
 	/* Если у нас чистый JPEG файл, то выполнение программы НЕ дойдет до этого участка программы.
 	   Если у нас JPEGZIP, то сигнатура начала у нас хотя бы для 1 файла будет проинициализирована.
