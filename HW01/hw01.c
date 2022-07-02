@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 			увеличили index на 1 и т.д. Когда мы считаем подряд идущие 4 байта 504b0304 и index=4, мы точно знаем что это начало LocalFileHeader.
 			Отслеживание начала JPEG файла работает также, только ищем подряд идущие 3 байта начала JPEG файла.
 			*/
-		if ((current == 0x50) && (index == 0 )){ index++; }
+		if (current == 0x50){ index = 0; index++; }
 		else if ((current == 0x4b) && (index == 1)) { index++; }
 		else if ((current == 0x03) && (index == 2)) { index++; }
 		else if ((current == 0x04) && (index == 3)) { index++; }
@@ -72,26 +72,25 @@ int main(int argc, char *argv[]) {
 		else { index = 0;}
 		if (index == 4) {
 			/* Нашли сигнатуру LocalFileHeader, читаем структуру целиком */
-			if (fread((char *) &lfh, sizeof(lfh), 1, file) == 0) {
+			if (fread(&lfh, sizeof(lfh), 1, file) == 0) {
 					printf("ERROR! Failed to initializate LocalFileHeader struct\n");
 				}
-				
+
 				/* Если имя файла != 0 */
 				if (lfh.filenameLength) {
-					
 					/* Выделим память размером с длину имени файла */
-					filename = (char *)malloc(lfh.filenameLength);
+					filename = (char *)malloc(lfh.filenameLength+1);
 					if (filename == NULL) { 
 						printf("ERROR! Failed to allocate memory\n");
 						exit(1);
 					}
 					/* Читаем имя файла */
-					if (fread((char *)filename, lfh.filenameLength, 1, file) == 0) {
+					if (fread(filename, lfh.filenameLength, 1, file) == 0) {
 						printf("ERROR! Failed to initialize pointer\n");
 						exit(1);
 					}
 					
-					filename[lfh.filenameLength] = 0;
+					filename[lfh.filenameLength] = '\0';
 					
 					/* Выводим его в STDOUT */
 					fputs(filename, stdout);
