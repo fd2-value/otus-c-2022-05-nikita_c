@@ -2,10 +2,10 @@ CC = gcc
 NAME = hw01
 NAMESRC = hw01.c
 
-COMPILEROPTIONS = -Wall -Wextra -Wpedantic -std=c11
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11
 
 $(NAME):
-	$(CC) $(GCCCOMPILEROPTIONS) $(NAMESRC) -o $(NAME)
+	$(CC) $(CFLAGS) $(NAMESRC) -o $(NAME)
 	  
 clean:
 	rm -f $(NAME)
