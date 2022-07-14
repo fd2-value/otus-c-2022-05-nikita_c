@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <curl/curl.h>
 #include <ctype.h>
 #include "memory.h"
 #include "libs/cJSON.h"
@@ -85,10 +86,9 @@ int main(int argc, char *argv[]) {
     /* указатели на структуру cJSON для работы с библиотекой cJSON
      * root - указатель на "разобраный" JSON
      * item, item_next - очередной элемент полученный при обходе JSON
-     * value - значение "ключа"
      * object - объект для поиска в JSON
      *  */
-    cJSON *root, *item, *item_next, *value, *object;
+    cJSON *root, *item, *item_next, *object;
     char *space = " "; /* пробел в качестве заглушки, если значние у ключа нет */
 	
 	/* Число аргументов меньше чем нужно? Сообщение об ошибке, информация для запуска программы и выход из программы */
