@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <curl/curl.h>
 #include <ctype.h>
 #include "memory.h"
 #include "libs/cJSON.h"
