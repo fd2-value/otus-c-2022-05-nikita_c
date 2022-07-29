@@ -1,4 +1,4 @@
-  #include <stdio.h>
+ #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -16,7 +16,7 @@ int print_backtrace() {
 	char **strings;
 	int size, i;
 
-	size = backtrace(array, BACKTRACE_BUFF_SIZE); 	/* возвращает число активных вызовов функций */
+	size = backtrace(array, BACKTRACE_BUFF_SIZE); 		/* возвращает число активных вызовов функций */
 	strings = backtrace_symbols(array, size);		/* "переводит" адреса в массив строк, описывающих адреса */
 	if (strings == NULL) {							
         perror("ERROR:");
