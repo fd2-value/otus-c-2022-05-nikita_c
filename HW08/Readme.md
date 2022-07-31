@@ -41,4 +41,17 @@ kh_put(ptr, self, key, &ret)
  
  /*
  ```
-
+**1) Fix #2**. Одна из ошибок:
+```sh
+==8003== 94 (64 direct, 30 indirect) bytes in 2 blocks are definitely lost in loss record 60 of 344
+==8003==    at 0x484586F: malloc (vg_replace_malloc.c:381)
+==8003==    by 0x4203F9: http_get_shared (http-get.c:46)
+==8003==    by 0x4057D3: clib_package_new_from_slug_with_package_name (clib-package.c:660)
+==8003==    by 0x405E02: clib_package_new_from_slug (clib-package.c:797)
+==8003==    by 0x40296F: main (package-install.c:23)
+ ```
+ В файле **clib-package.c:660** указателю **res** на структуру **http_get_response_t** присваивается результат выполнения функции **http_get_shared (файл - http-get.c)**:
+ ```sh
+ res = http_get_shared(json_url, clib_package_curl_share);
+  ```
+  При определенных условиях программа может перейти к метке **download**, yt 
