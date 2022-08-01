@@ -41,7 +41,7 @@ kh_put(ptr, self, key, &ret)
  
  /*
  ```
-**1) Fix #2**. Одна из ошибок:
+**2) Fix #2**. Одна из ошибок:
 ```sh
 ==8003== 94 (64 direct, 30 indirect) bytes in 2 blocks are definitely lost in loss record 60 of 344
 ==8003==    at 0x484586F: malloc (vg_replace_malloc.c:381)
@@ -50,8 +50,30 @@ kh_put(ptr, self, key, &ret)
 ==8003==    by 0x405E02: clib_package_new_from_slug (clib-package.c:797)
 ==8003==    by 0x40296F: main (package-install.c:23)
  ```
- В файле **clib-package.c:660** указателю **res** на структуру **http_get_response_t** присваивается результат выполнения функции **http_get_shared (файл - http-get.c)**:
- ```sh
- res = http_get_shared(json_url, clib_package_curl_share);
-  ```
-  При определенных условиях программа может перейти к метке **download**, yt 
+При определенном поведении программы, выполняется участок кода:
+```sh
+res = http_get_shared(json_url, clib_package_curl_share);
+```
+Функция **http_get_shared** может вернуть **0** или **1**.
+Далее **res** проверяется в условии:  
+```sh
+if (!res || !res->ok) {
+        goto download;
+      }
+```
+Т.е. если **res = 0**, то произойдет переход к метке download. Приэтом функция **http_get_free (http-get.c)** никогда не вызовется.  
+Сам patch:  
+```sh
+--- clib/src/common/clib-package.c	2022-08-01 10:50:51.296609902 +0500
++++ clib/src/common/clib-package_fix.c	2022-08-01 10:50:38.271610021 +0500
+@@ -664,6 +664,9 @@
+       json = res->data;
+       _debug("status: %d", res->status);
+       if (!res || !res->ok) {
++		if(res && retries > 0) {  
++			http_get_free(res); 
++		}
+         goto download;
+       }
+       log = "fetch";
+```
