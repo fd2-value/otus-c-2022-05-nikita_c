@@ -1,0 +1,10 @@
+--- hash.c	2022-07-31 23:19:09.137616859 +0500
++++ hash_fix.c	2022-07-31 23:21:50.322636014 +0500
+@@ -16,6 +16,7 @@
+   int ret;
+   khiter_t k = kh_put(ptr, self, key, &ret);
+   kh_value(self, k) = val;
++  if(ret == 0) { free(key); }
+ }
+ 
+ /*
