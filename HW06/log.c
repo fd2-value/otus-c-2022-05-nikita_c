@@ -7,8 +7,9 @@
 #include <execinfo.h>
 #include "log.h"
 
-/* дескриптор для записи сообщений в лог файл */
-FILE *fout;
+FILE *fout;																	/* дескриптор для записи сообщений в лог файл */
+#define BACKTRACE_BUFF_SIZE 1024											/* длина буфера для фреймов в стеке */
+static const char *level[4] = {"DEBUG", "INFO", "WARNING", "ERROR"};		/* массив, с уровнем важности сообщений */
 
 /* вывод стек вызовов */
 int print_backtrace() {
@@ -16,7 +17,7 @@ int print_backtrace() {
 	char **strings;
 	int size, i;
 
-	size = backtrace(array, BACKTRACE_BUFF_SIZE); 		/* возвращает число активных вызовов функций */
+	size = backtrace(array, BACKTRACE_BUFF_SIZE); 	/* возвращает число активных вызовов функций */
 	strings = backtrace_symbols(array, size);		/* "переводит" адреса в массив строк, описывающих адреса */
 	if (strings == NULL) {							
         perror("ERROR:");
@@ -57,13 +58,13 @@ int check_arguments(char *filename, char *mode) {
 }
 
 /* функция инициализации работы с лог файлом */
-void log_start(char *filename, char mode) {
+void log_start(char *filename, char *mode) {
 	/* проверка переданных значений */
-	if (check_arguments(filename, &mode) == -1) {
+	if (check_arguments(filename, mode) == -1) {
 		exit(1);
 	}
 	/* открыть файл, с соответствующим режимом */
-	if ((fout = fopen(filename, &mode)) == NULL) {
+	if ((fout = fopen(filename, mode)) == NULL) {
 		perror("ERROR! Can't open file.\n");
 		exit(1);
 	}
