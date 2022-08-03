@@ -21,7 +21,7 @@ int main()
 	Student[1].age = 21;
 	
 	/* имя файла и режим работы w (write) */
-	log_start("simple_log",'w');
+	log_start("simple_log","w");
 	
 	/* вывод различных сообщений */
 	log_debug("%s", "Hello World!");
