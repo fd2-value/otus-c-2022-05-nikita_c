@@ -76,13 +76,12 @@ uint32_t calculate_CRC32(const uint8_t data[], size_t data_length) {
         crc32 = (crc32 >> 8) ^ crc32Table[lookupIndex];
     }
 
-    // Finalize the CRC-32 value by inverting all the bits
     crc32 ^= 0xFFFFFFFFu;
     return crc32;
 }
 
 int main(int argc, char *argv[]) {
-	int fd = 0;				/* дескриптор файла */
+	int fd = 0;			/* дескриптор файла */
 	struct stat st;			/* структура для информации о файле */
 	char *file = NULL;		/* указатель на файл */
 	uint8_t *ptr;			/* указатель на начало "отображенной" памяти */
