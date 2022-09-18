@@ -5,7 +5,7 @@ Description=This daemon get file size and send it via socket
 Type=forking
 PIDFile=/tmp/hw09.pid
 WorkingDirectory=/tmp
-ExecStart=/usr/local/bin/hw09-2 -d -c /tmp/config
+ExecStart=/usr/local/bin/hw09 -d -c /tmp/config
 TimeoutSec=60
 
 [Install]
